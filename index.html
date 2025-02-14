@@ -179,6 +179,10 @@
     <button id="takeScreenshot">Téléchargez Image</button>
     <button id="takeScreenshot1" onclick="copyLink()">Copier le lien</button>
   </div>
+  <div style="text-align:center; margin: 20px;">
+    <strong>Heures totales: <span id="totalHours">0</span> H</strong> |
+    <strong>Nombre Total de ouvriers: <span id="rowCount">0</span> PRS</strong>
+  </div>
   <div id="result"></div>
 
   <table id="dataTable">
@@ -289,26 +293,27 @@
             let tableBody = document.getElementById("dataTable").getElementsByTagName("tbody")[0];
             tableBody.innerHTML = '';  
 
+            let totalHours = 0;
+            let rowCount = 0;
+
             data.forEach(function(row, index) {
-                // عرض الصفوف التي تحتوي على "FINCA 20" فقط
                 if (row[5] === "FINCA 20") {
                     let tr = document.createElement("tr");
 
                     row.forEach(function(cell, colIndex) {
                         let td = document.createElement("td");
-
-                        // تنسيق التاريخ في العمود الخامس (DATE)
                         if (colIndex === 4) {
                             let date = new Date(cell);
                             let day = String(date.getDate()).padStart(2, '0');
                             let month = String(date.getMonth() + 1).padStart(2, '0');
                             let year = date.getFullYear();
                             td.textContent = `${day}/${month}/${year}`;  
+                        } else if (colIndex === 3) {  
+                            totalHours += parseFloat(cell) || 0;
+                            td.textContent = cell;
                         } else {
                             td.textContent = cell; 
                         }
-
-                        // ✅ إضافة لون أحمر للخلايا في العمود السابع إذا لم تكن "POINTE"
                         if (colIndex === 6 && cell !== "") {
                             td.style.backgroundColor = "green";
                             td.style.color = "white";
@@ -317,7 +322,7 @@
                         tr.appendChild(td);
                     });
 
-                    // أزرار التعديل والحذف
+
                     let tdActions = document.createElement("td");
                     let editButton = document.createElement("button");
                     editButton.textContent = "Modifier";
@@ -337,8 +342,13 @@
                     tdActions.appendChild(deleteButton);
                     tr.appendChild(tdActions);
                     tableBody.appendChild(tr);
+
+                    rowCount++; 
                 }
             });
+
+            document.getElementById("totalHours").textContent = totalHours.toFixed(2);
+            document.getElementById("rowCount").textContent = rowCount;
         });
 }
 
@@ -472,30 +482,27 @@
     fetch(webAppUrl + '?action=getData')
         .then(response => response.json())
         .then(data => {
-            // 🔹 تصفية البيانات لاختيار 6 أعمدة فقط و "FINCA 20"
+ 
             let filteredData = data
                 .filter(row => row[5] === "FINCA 20")
                 .map(row => [row[0], row[1], row[2], row[3], row[4], row[5]]);
 
             if (filteredData.length < 2) {
-                alert("لا يوجد بيانات كافية لاستخراج التاريخ!");
+                alert("PAS DES DONNEES");
                 return;
             }
 
-            // 📌 استخراج التاريخ من السطر الثاني العمود الخامس
-            let rawDate = filteredData[1][4]; // الصف الثاني، العمود الخامس (Index 4)
-            let formattedDate = formatDate(rawDate); // تنسيق التاريخ إلى dd-mm-yyyy
+            let rawDate = filteredData[1][4]; 
+            let formattedDate = formatDate(rawDate);
 
-            // 🔹 رأس الجدول
+  
             let headers = ["MATRICULE", "NOMBRE", "EQUIPE", "HOURS", "DATE", "FINCA"];
 
-            // 🔹 إنشاء ورقة Excel
+    
             let ws = XLSX.utils.aoa_to_sheet([headers, ...filteredData]);
 
-            // 📌 إضافة فلتر إلى جميع الأعمدة
             ws['!autofilter'] = { ref: `A1:F${filteredData.length + 1}` };
 
-            // 📌 ضبط عرض الأعمدة ديناميكيًا بناءً على أطول محتوى
             let colWidths = headers.map((_, colIndex) => ({
                 wch: Math.max(
                     ...filteredData.map(row => (row[colIndex] ? row[colIndex].toString().length : 10)),
@@ -504,42 +511,35 @@
             }));
             ws['!cols'] = colWidths;
 
-            // 🔹 إنشاء ملف Excel
             let wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Données");
 
-            // 🔹 تحويل الملف إلى Blob
             let wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
             let blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
 
-            // 📥 تحميل الملف مع اسم يحتوي على التاريخ المستخرج
-            let fileName = `Pointage${formattedDate}.xlsx`;
+            let fileName = `Pointage - ${formattedDate}.xlsx`;
             let link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
             link.download = fileName;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-
-            // 📤 إرسال الملف إلى تيليجرام
             sendToTelegram(blob, fileName);
         });
 }
 
-// 📌 دالة تنسيق التاريخ إلى dd-mm-yyyy
 function formatDate(dateString) {
     let date = new Date(dateString);
-    if (isNaN(date)) return "unknown"; // في حال كان التاريخ غير صالح
+    if (isNaN(date)) return "unknown"; 
     let day = String(date.getDate()).padStart(2, '0');
     let month = String(date.getMonth() + 1).padStart(2, '0');
     let year = date.getFullYear();
     return `${day}-${month}-${year}`;
 }
 
-// 📤 دالة إرسال الملف إلى تيليجرام مع اسم الملف الجديد
 function sendToTelegram(fileBlob, fileName) {
     let botToken = "7561853556:AAElzI6FYzNb6yNUV6EA_Bnzkec2hUrcP70";
-    let chatId = "-1002408201424"; // 🔒 استبدلها بالمعرف الصحيح للمجموعة
+    let chatId = "-1002408201424";
 
     let formData = new FormData();
     formData.append("chat_id", chatId);
