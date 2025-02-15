@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EFFECTIF CAMPO</title>
+  <title>POINTAGE CAMPO</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -169,12 +169,18 @@
     #downloadExcel {
       margin-right: 20px;
     }
+    .table-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
   </style>
 </head>
 <body>
   <div class="button-container">
     <button id="takeScreenshot1" onclick="downloadExcel()">Envoyer</button>
-
+    <button id="takeScreenshot1" onclick="downloadExcel1()">Téléchargez Excel</button>
     <button id="downloadExcel" style="display: none;">Téléchargez Excel</button>
     <button id="takeScreenshot">Téléchargez Image</button>
     <button id="takeScreenshot1" onclick="copyLink()">Copier le lien</button>
@@ -184,7 +190,7 @@
     <strong>Nombre Total de ouvriers: <span id="rowCount">0</span> PRS</strong>
   </div>
   <div id="result"></div>
-
+  <div class="table-container">
   <table id="dataTable">
     <thead>
       <tr>
@@ -200,7 +206,7 @@
     </thead>
     <tbody></tbody>
   </table>
-
+</div>
   <div id="myModal" class="modal">
     <div class="modal-content">
       <span class="close">&times;</span>
@@ -482,10 +488,10 @@
     fetch(webAppUrl + '?action=getData')
         .then(response => response.json())
         .then(data => {
- 
+            
             let filteredData = data
                 .filter(row => row[5] === "FINCA 20")
-                .map(row => [row[0], row[1], row[2], row[3], row[4], row[5]]);
+                .map(row => [row[0], row[1], row[2], row[3], formatDate(row[4]), row[5]]);
 
             if (filteredData.length < 2) {
                 alert("PAS DES DONNEES");
@@ -495,10 +501,8 @@
             let rawDate = filteredData[1][4]; 
             let formattedDate = formatDate(rawDate);
 
-  
             let headers = ["MATRICULE", "NOMBRE", "EQUIPE", "HOURS", "DATE", "FINCA"];
 
-    
             let ws = XLSX.utils.aoa_to_sheet([headers, ...filteredData]);
 
             ws['!autofilter'] = { ref: `A1:F${filteredData.length + 1}` };
@@ -524,18 +528,80 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            URL.revokeObjectURL(link.href); 
+
             sendToTelegram(blob, fileName);
+        })
+        .catch(error => {
+            console.error("Erreur lors de la récupération des données :", error);
+            alert("Une erreur est survenue lors du téléchargement des données.");
         });
 }
 
-function formatDate(dateString) {
-    let date = new Date(dateString);
-    if (isNaN(date)) return "unknown"; 
+function downloadExcel1() {
+    fetch(webAppUrl + '?action=getData')
+        .then(response => response.json())
+        .then(data => {
+            
+            let filteredData = data
+                .filter(row => row[5] === "FINCA 20")
+                .map(row => [row[0], row[1], row[2], row[3], formatDate(row[4]), row[5]]);
+
+            if (filteredData.length < 2) {
+                alert("PAS DES DONNEES");
+                return;
+            }
+
+            let rawDate = filteredData[1][4]; 
+            let formattedDate = formatDate(rawDate);
+
+            let headers = ["MATRICULE", "NOMBRE", "EQUIPE", "HOURS", "DATE", "FINCA"];
+
+            let ws = XLSX.utils.aoa_to_sheet([headers, ...filteredData]);
+
+            ws['!autofilter'] = { ref: `A1:F${filteredData.length + 1}` };
+
+            let colWidths = headers.map((_, colIndex) => ({
+                wch: Math.max(
+                    ...filteredData.map(row => (row[colIndex] ? row[colIndex].toString().length : 10)),
+                    headers[colIndex].length
+                ) + 2
+            }));
+            ws['!cols'] = colWidths;
+
+            let wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Données");
+
+            let wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            let blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+            let fileName = `Pointage - ${formattedDate}.xlsx`;
+            let link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href); 
+
+            
+        })
+        .catch(error => {
+            console.error("Erreur lors de la récupération des données :", error);
+            alert("Une erreur est survenue lors du téléchargement des données.");
+        });
+}
+function formatDate(rawDate) {
+    if (!rawDate) return "";
+    let date = new Date(rawDate);
+    if (isNaN(date.getTime())) return rawDate; 
+
     let day = String(date.getDate()).padStart(2, '0');
     let month = String(date.getMonth() + 1).padStart(2, '0');
     let year = date.getFullYear();
     return `${day}-${month}-${year}`;
 }
+
 
 function sendToTelegram(fileBlob, fileName) {
     let botToken = "7561853556:AAElzI6FYzNb6yNUV6EA_Bnzkec2hUrcP70";
