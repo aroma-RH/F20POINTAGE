@@ -360,20 +360,25 @@
 
 
 
-    function openModal(index, row) {
-      document.getElementById("matricule").value = row[0]; 
-      document.getElementById("nombre").value = row[1]; 
-      document.getElementById("equipe").value = row[2];
-      document.getElementById("hours").value = row[3]; 
-      document.getElementById("date").value = row[4];
-      document.getElementById("finca").value = row[5]; 
-      document.getElementById("situation").value = row[6];
-      modal.style.display = "block";
-      
-      window.currentRowIndex = index;
-    }
+function openModal(index, row) {
+    document.getElementById("matricule").value = row[0]; 
+    document.getElementById("nombre").value = row[1]; 
+    document.getElementById("equipe").value = row[2];
+    document.getElementById("hours").value = row[3]; 
+    
+    
+    let date = new Date(row[4]);
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset()); 
+    document.getElementById("date").value = date.toISOString().split('T')[0]; 
+    
+    document.getElementById("finca").value = row[5]; 
+    document.getElementById("situation").value = row[6];
+    modal.style.display = "block";
+    
+    window.currentRowIndex = index;
+}
 
-    function updateData() {
+function updateData() {
     const matricule = document.getElementById("matricule").value;
     const nombre = document.getElementById("nombre").value;
     const equipe = document.getElementById("equipe").value;
@@ -382,12 +387,10 @@
     const finca = document.getElementById("finca").value;
     const situation = document.getElementById("situation").value;
 
-  
     fetch(webAppUrl + '?action=updateData&index=' + window.currentRowIndex + '&matricule=' + matricule + '&nombre=' + nombre + '&equipe=' + equipe + '&hours=' + hours + '&date=' + date + '&finca=' + finca + '&situation=' + situation)
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                
                 modal.style.display = "none"; 
                 loadData(); 
             } else {
@@ -399,6 +402,7 @@
             console.error("Update error: ", error);
         });
 }
+
 
 
     function deleteRow(index) {
