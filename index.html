@@ -175,6 +175,11 @@
   overflow-y: auto;
 }
 
+.highlight {
+    background-color: red; /* تلوين السطر باللون الأحمر */
+}
+
+
   </style>
 </head>
 <body>
@@ -296,37 +301,50 @@
     fetch(webAppUrl + '?action=getData')
         .then(response => response.json())
         .then(data => {
-            let tableBody = document.getElementById("dataTable").getElementsByTagName("tbody")[0];
-            tableBody.innerHTML = '';  
+          let tableBody = document.getElementById("dataTable").getElementsByTagName("tbody")[0];
+tableBody.innerHTML = '';  
 
-            let totalHours = 0;
-            let rowCount = 0;
+let totalHours = 0;
+let rowCount = 0;
 
-            data.forEach(function(row, index) {
-                if (row[5] === "FINCA 20") {
-                    let tr = document.createElement("tr");
+data.forEach(function(row, index) {
+    if (row[5] === "FINCA 20") {
+        let tr = document.createElement("tr");
 
-                    row.forEach(function(cell, colIndex) {
-                        let td = document.createElement("td");
-                        if (colIndex === 4) {
-                            let date = new Date(cell);
-                            let day = String(date.getDate()).padStart(2, '0');
-                            let month = String(date.getMonth() + 1).padStart(2, '0');
-                            let year = date.getFullYear();
-                            td.textContent = `${day}/${month}/${year}`;  
-                        } else if (colIndex === 3) {  
-                            totalHours += parseFloat(cell) || 0;
-                            td.textContent = cell;
-                        } else {
-                            td.textContent = cell; 
-                        }
-                        if (colIndex === 6 && cell !== "") {
-                            td.style.backgroundColor = "green";
-                            td.style.color = "white";
-                        }
+        row.forEach(function(cell, colIndex) {
+            let td = document.createElement("td");
 
-                        tr.appendChild(td);
-                    });
+          
+            if (colIndex === 4) {
+                let date = new Date(cell);
+                let day = String(date.getDate()).padStart(2, '0');
+                let month = String(date.getMonth() + 1).padStart(2, '0');
+                let year = date.getFullYear();
+                td.textContent = `${day}/${month}/${year}`;  
+            } else if (colIndex === 3) {  
+                totalHours += parseFloat(cell) || 0;
+                td.textContent = cell;
+            } else {
+                td.textContent = cell; 
+            }
+
+            if (colIndex === 6 && cell !== "") {
+                td.style.backgroundColor = "green";
+                td.style.color = "white";
+            }
+
+            if (colIndex === 7 && cell === "NON") {
+             
+                tr.style.color = "red"; 
+                tr.style.fontSize = "20px";
+                tr.style.fontWeight = "bold"; 
+                
+            }
+            if (colIndex === 7) {
+                td.style.display = "none";  
+            }
+            tr.appendChild(td);
+        });
 
 
                     let tdActions = document.createElement("td");
@@ -402,6 +420,22 @@ function updateData() {
             console.error("Update error: ", error);
         });
 }
+function highlightRows() {
+    var table = document.getElementById("dataTable");
+    var rows = table.getElementsByTagName("tr");
+
+    for (var i = 1; i < rows.length; i++) { // بدءًا من الصف الأول (تخطي العنوان)
+        var cells = rows[i].getElementsByTagName("td");
+        var situationCell = cells[7]; // تأكد من أن العمود 3 هو عمود SITUATION (والذي يعد الرقم 4 من اليسار)
+
+        if (situationCell && situationCell.innerText.trim() === "NON") {
+            rows[i].classList.add("highlight"); // إضافة الفئة لتلوين السطر
+        }
+    }
+}
+
+// استدعاء الدالة بعد تحميل الصفحة
+window.onload = highlightRows;
 
 
 
@@ -620,8 +654,8 @@ function sendToTelegram(fileBlob, fileName) {
         body: formData
     })
     .then(response => response.json())
-    .then(data => console.log("تم الإرسال إلى تيليجرام:", data))
-    .catch(error => console.error("خطأ في الإرسال:", error));
+    .then(data => console.log("c ok:", data))
+    .catch(error => console.error("errour:", error));
 }
 
 
