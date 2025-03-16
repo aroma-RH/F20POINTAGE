@@ -53,7 +53,6 @@
     }
 
     .edit-button {
-        display: none;
       background-color: #4a90e2;
       color: white;
     }
@@ -206,8 +205,8 @@
         <th>HOURS</th>
         <th>DATE</th>
         <th>FINCA</th>
-        <th>TRANSPORT</th>
-        
+        <th>SITUATION</th>
+        <th>Procédures</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -256,7 +255,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas/dist/html2canvas.min.js"></script>
   <script>
-    fetch('https://script.google.com/macros/s/AKfycbzNa3gICb4Mv2q8h58T547YwkcYrdz45xsH73W8pniWi6cpIHdrTZ9kMF444RyZ8go/exec')
+    fetch('https://script.google.com/macros/s/AKfycbxoy923OwLPZA7S2wq5qOjcp8xA1IVc-28vxSMXDCqobxt9keI_NRfQLwe9E1Y1w12OoQ/exec')
       .then(response => response.json())
       .then(data => {
         const comboBox = document.getElementById('equipe');
@@ -289,7 +288,7 @@
       }
     };
 
-    const webAppUrl = "https://script.google.com/macros/s/AKfycbzNa3gICb4Mv2q8h58T547YwkcYrdz45xsH73W8pniWi6cpIHdrTZ9kMF444RyZ8go/exec"; 
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbwzHWPjKfWKo-01iWjHVopqLHuzDFASz8ud5_G7J-seBKQJCLTOaBGkrprkKXiPAFhtSQ/exec"; 
 
     var modal = document.getElementById("myModal");
     var span = document.getElementsByClassName("close")[0];
@@ -309,7 +308,7 @@ let totalHours = 0;
 let rowCount = 0;
 
 data.forEach(function(row, index) {
-    if (row[5] === "N 10") {
+    if (row[5] === "FINCA 20") {
         let tr = document.createElement("tr");
 
         row.forEach(function(cell, colIndex) {
@@ -329,7 +328,10 @@ data.forEach(function(row, index) {
                 td.textContent = cell; 
             }
 
-            
+            if (colIndex === 6 && cell !== "") {
+                td.style.backgroundColor = "green";
+                td.style.color = "white";
+            }
 
             if (colIndex === 7 && cell === "NON") {
              
@@ -348,7 +350,6 @@ data.forEach(function(row, index) {
                     let tdActions = document.createElement("td");
                     let editButton = document.createElement("button");
                     editButton.textContent = "Modifier";
-                    
                     editButton.classList.add("edit-button");
                     editButton.onclick = function() {
                         openModal(index, row);
@@ -445,9 +446,7 @@ window.onload = highlightRows;
           if (data.status === 'success') {
             loadData();
           } else {
-            loadData();
-            alert("c ok!");
-            
+            alert("Erreur de suppression des données !");
           }
         });
     }
@@ -529,8 +528,8 @@ window.onload = highlightRows;
         .then(data => {
             
             let filteredData = data
-                .filter(row => row[5] === "N 10")
-                .map(row => [row[0], row[1], row[2], row[3], formatDate(row[4]), row[5], row[6]]);
+                .filter(row => row[5] === "FINCA 20")
+                .map(row => [row[0], row[1], row[2], row[3], formatDate(row[4]), row[5]]);
 
             if (filteredData.length < 2) {
                 alert("PAS DES DONNEES");
@@ -540,7 +539,7 @@ window.onload = highlightRows;
             let rawDate = filteredData[1][4]; 
             let formattedDate = formatDate(rawDate);
 
-            let headers = ["MATRICULE", "NOMBRE", "EQUIPE", "HOURS", "DATE", "FINCA", "TRANSPORT"];
+            let headers = ["MATRICULE", "NOMBRE", "EQUIPE", "HOURS", "DATE", "FINCA"];
 
             let ws = XLSX.utils.aoa_to_sheet([headers, ...filteredData]);
 
@@ -583,10 +582,10 @@ function downloadExcel1() {
         .then(data => {
             
             let filteredData = data
-                .filter(row => row[5] === "N 10")
+                .filter(row => row[5] === "FINCA 20")
                 .map(row => [row[0], row[1], row[2], row[3], formatDate(row[4]), row[5]]);
 
-            if (filteredData.length < 1) {
+            if (filteredData.length < 2) {
                 alert("PAS DES DONNEES");
                 return;
             }
@@ -643,8 +642,8 @@ function formatDate(rawDate) {
 
 
 function sendToTelegram(fileBlob, fileName) {
-    let botToken = "8048744049:AAGAJaZZWkcheV7ETUGjJEmMtHjPMQJb5qk";
-    let chatId = "6928955938";
+    let botToken = "7561853556:AAElzI6FYzNb6yNUV6EA_Bnzkec2hUrcP70";
+    let chatId = "-1002408201424";
 
     let formData = new FormData();
     formData.append("chat_id", chatId);
